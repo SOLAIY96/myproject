@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat</title>
+</head>
+<body>
+
+<h2>Simple Chat</h2>
+
+<input id="usernameInput" type="text" placeholder="Enter username">
+<input id="messageInput" type="text">
+<button onclick="sendMessage()">Send</button>
+
+<ul id="messages" style="height:200px; overflow-y:auto;"></ul>
+
+<script>
+    const socket = new WebSocket("ws://127.0.0.1:8000/ws/chat/");
+
+    socket.onopen = function() {
+        console.log("✅ Connected");
+    };
+
+    socket.onclose = function() {
+        console.log("❌ Closed");
+    };
+
+    socket.onerror = function(error) {
+        console.log("⚠️ Error:", error);
+    };
+
+    socket.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        const li = document.createElement("li");
+
+        li.textContent = data.username + ": " + data.message;
+
+        const messages = document.getElementById("messages");
+        messages.appendChild(li);
+
+        // ✅ Auto-scroll HERE (correct place)
+        messages.scrollTop = messages.scrollHeight;
+    };
+
+    function sendMessage() {
+        if (socket.readyState === WebSocket.OPEN) {
+
+            const input = document.getElementById("messageInput");
+            const username = document.getElementById("usernameInput").value;
+
+            // ✅ Prevent empty messages
+            if (input.value.trim() === "") return;
+
+            socket.send(JSON.stringify({
+                "username": username,
+                "message": input.value
+            }));
+
+            input.value = "";
+        } else {
+            console.log("Socket not open!");
+        }
+    }
+
+    // ✅ Press Enter to send
+    document.getElementById("messageInput")
+        .addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                sendMessage();
+            }
+        });
+
+</script>
+
+</body>
+</html>
