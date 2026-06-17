@@ -14,30 +14,26 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
-from django.conf import settings
-from django.urls import path, include
-from core.views import (
-    get_messages_sync,
-    get_message_async,
-    get_post_sync,
-    get_post_async,
-    chat
 
-)
+from django.conf import settings
+from django.contrib import admin
+from django.urls import include, path
+
+from core.views import (chat, get_message_async, get_messages_sync,
+                        get_post_async, get_post_sync)
 from library.views import PostLitsView
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('get-messages-sync/', get_messages_sync),
-    path('get-message-async/', get_message_async),
-    path('get-post-sync/', get_post_sync),
-    path('get-post-async/', get_post_async),
-    path('chat/', chat),
-    path('posts/', PostLitsView.as_view()),
+    path("admin/", admin.site.urls),
+    path("get-messages-sync/", get_messages_sync),
+    path("get-message-async/", get_message_async),
+    path("get-post-sync/", get_post_sync),
+    path("get-post-async/", get_post_async),
+    path("chat/", chat),
+    path("posts/", PostLitsView.as_view()),
 ]
 
 if settings.DEBUG:
     urlpatterns += [
-        path('__debug__/', include('debug_toolbar.urls')),
+        path("__debug__/", include("debug_toolbar.urls")),
     ]
