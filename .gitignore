@@ -1,18 +1,41 @@
+
 # Environment variables
 .env
+.env.*
+!.env.example
+
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
 
 # Python
 __pycache__/
 *.py[cod]
+*.pyo
 
-# Virtual environment
+# Virtual environments
 venv/
+.venv/
 
 # Django database
 db.sqlite3
 
+# User uploaded media
+media/
+
 # Test cache
 .pytest_cache/
+.coverage
+htmlcov/
 
 # VS Code
 .vscode/
+
+# Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Operating system
+.DS_Store
+Thumbs.db

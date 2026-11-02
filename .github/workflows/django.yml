@@ -44,3 +44,25 @@ jobs:
       - name: Run Flake8
         run: |
           flake8 .
+
+
+
+#Developer writes code
+#          ↓
+#Git push
+#          ↓
+#GitHub Actions starts
+#          ↓
+#Install dependencies
+#          ↓
+#Run Black
+#          ↓
+#Run isort
+#          ↓
+#Run Flake8
+#          ↓
+#Run pytest
+#          ↓
+#Pass ✅
+#          ↓
+#Ready for deployment

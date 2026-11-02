@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test</title>
+</head>
+<body>
+
+<h1>Posts</h1>
+
+{% for item in data %}
+    <p>{{ item.title }} - {{ item.author }}</p>
+{% endfor %}
+
+</body>
+</html>
