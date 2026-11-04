@@ -1,3 +1,4 @@
+
 name: Django CI
 
 on:
@@ -7,12 +8,12 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: test_myproject
+          POSTGRES_DB: test_db
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
@@ -23,18 +24,17 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-  env:
-    DEBUG: "False"
-    SECRET_KEY: "ci-only-test-secret-key-not-for-production"
-    POSTGRES_DB: test_db
-    POSTGRES_USER: postgres
-    POSTGRES_PASSWORD: postgres
-    POSTGRES_HOST: localhost
-    POSTGRES_PORT: "5432"
-    STRIPE_SECRET_KEY: ""
-    STRIPE_PUBLISHABLE_KEY: ""
-    CELERY_BROKER_URL: "memory://"
-
+    env:
+      DEBUG: "False"
+      SECRET_KEY: "ci-only-test-secret-key-not-for-production"
+      POSTGRES_DB: test_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      STRIPE_SECRET_KEY: ""
+      STRIPE_PUBLISHABLE_KEY: ""
+      CELERY_BROKER_URL: "memory://"
 
     steps:
       - name: Checkout Repository
@@ -51,43 +51,16 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Django Check
-        run: |
-          python manage.py check
+        run: python manage.py check
 
       - name: Run Tests
-        run: |
-          pytest
+        run: python manage.py test --verbosity 2
 
       - name: Check Formatting (Black)
-        run: |
-          black --check .
+        run: black --check .
 
       - name: Check Import Sorting (isort)
-        run: |
-          isort --check-only .
+        run: isort --check-only .
 
       - name: Run Flake8
-        run: |
-          flake8 .
-
-
-
-#Developer writes code
-#          ↓
-#Git push
-#          ↓
-#GitHub Actions starts
-#          ↓
-#Install dependencies
-#          ↓
-#Run Black
-#          ↓
-#Run isort
-#          ↓
-#Run Flake8
-#          ↓
-#Run pytest
-#          ↓
-#Pass ✅
-#          ↓
-#Ready for deployment
+        run: flake8 .
