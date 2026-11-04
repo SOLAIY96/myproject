@@ -137,13 +137,14 @@ DATABASES = {
 STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")
 STRIPE_PUBLISHABLE_KEY = config("STRIPE_PUBLISHABLE_KEY", default="")
 
+if not STRIPE_SECRET_KEY and not RUNNING_TESTS:
+    raise ValueError("STRIPE_SECRET_KEY is not configured")
+
 FRONTEND_URL = config(
     "FRONTEND_URL",
     default="http://localhost:5173",
 ).rstrip("/")
 
-if not STRIPE_SECRET_KEY:
-    raise ValueError("STRIPE_SECRET_KEY is not configured")
 
 STRIPE_WEBHOOK_SECRET = config(
     "STRIPE_WEBHOOK_SECRET",

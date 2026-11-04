@@ -23,17 +23,17 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-    env:
-      DEBUG: "False"
-      SECRET_KEY: "ci-only-test-secret-key-not-for-production"
-      POSTGRES_DB: test_myproject
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_HOST: localhost
-      POSTGRES_PORT: "5432"
-      
-      STRIPE_SECRET_KEY: "sk_test_ci_placeholder"
-      CELERY_BROKER_URL: "memory://"
+  env:
+    DEBUG: "False"
+    SECRET_KEY: "ci-only-test-secret-key-not-for-production"
+    POSTGRES_DB: test_db
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+    POSTGRES_HOST: localhost
+    POSTGRES_PORT: "5432"
+    STRIPE_SECRET_KEY: ""
+    STRIPE_PUBLISHABLE_KEY: ""
+    CELERY_BROKER_URL: "memory://"
 
 
     steps:
