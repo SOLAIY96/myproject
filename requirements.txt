@@ -5,6 +5,7 @@ attrs==26.1.0
 autobahn==26.7.1
 Automat==25.4.16
 billiard==4.2.4
+black==26.10.1
 brotli==1.2.0
 cbor2==6.1.4
 celery==5.6.3

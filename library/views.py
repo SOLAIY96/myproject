@@ -28,10 +28,8 @@ from .serializers import (
     PostSerializer,
     ChangePasswordSerializer,
     AttachmentSerializer,
-    NotificationSerializer
+    NotificationSerializer,
 )
-
-
 
 logger = logging.getLogger(__name__)
 
@@ -49,15 +47,13 @@ class PostListView(ListAPIView):
 
     serializer_class = PostSerializer
 
+
 class TaskListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = TaskSerializer
 
     def get_queryset(self):
-        return Task.objects.select_related("owner").filter(
-            owner=self.request.user
-        )
-
+        return Task.objects.select_related("owner").filter(owner=self.request.user)
 
     def perform_create(self, serializer):
         task = serializer.save(owner=self.request.user)
@@ -85,7 +81,6 @@ class TaskListCreateView(generics.ListCreateAPIView):
                     "user_id": self.request.user.id,
                 },
             )
-
 
 
 class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -142,7 +137,6 @@ class ChangePasswordView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-
             user.set_password(serializer.validated_data["new_password"])
             user.save()
 
@@ -154,24 +148,21 @@ class ChangePasswordView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 class AttachmentListCreateView(generics.ListCreateAPIView):
     serializer_class = AttachmentSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
-        return Attachment.objects.filter(
-            owner=self.request.user
-        ).order_by("-created_at")
+        return Attachment.objects.filter(owner=self.request.user).order_by(
+            "-created_at"
+        )
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
 
-
 logger = logging.getLogger(__name__)
-
 
 
 @csrf_exempt
@@ -222,9 +213,7 @@ def stripe_webhook(request):
     try:
         with transaction.atomic():
             # Fast path for events already fully handled.
-            if StripeWebhookEvent.objects.filter(
-                event_id=event_id
-            ).exists():
+            if StripeWebhookEvent.objects.filter(event_id=event_id).exists():
                 return HttpResponse(status=200)
 
             order = Order.objects.select_for_update().get(
@@ -233,9 +222,7 @@ def stripe_webhook(request):
 
             # Recheck after acquiring the order lock. This handles
             # concurrent deliveries of the same event for this order.
-            if StripeWebhookEvent.objects.filter(
-                event_id=event_id
-            ).exists():
+            if StripeWebhookEvent.objects.filter(event_id=event_id).exists():
                 return HttpResponse(status=200)
 
             if session.get("payment_status") != "paid":
@@ -284,7 +271,6 @@ def stripe_webhook(request):
                 )
                 return HttpResponse(status=200)
 
-
             # This record and the order update commit together.
             order.status = Order.Status.PAID
             order.save(update_fields=["status"])
@@ -319,7 +305,6 @@ def stripe_webhook(request):
         return HttpResponse(status=400)
 
     return HttpResponse(status=200)
-
 
 
 class CheckoutSessionCreateView(APIView):
@@ -372,9 +357,7 @@ class CheckoutSessionCreateView(APIView):
                     }
                 ],
                 metadata={"order_id": str(order.pk)},
-                payment_intent_data={
-                    "metadata": {"order_id": str(order.pk)}
-                },
+                payment_intent_data={"metadata": {"order_id": str(order.pk)}},
                 success_url=(
                     f"{settings.FRONTEND_URL}/?checkout=success"
                     "&session_id={CHECKOUT_SESSION_ID}"
@@ -393,9 +376,7 @@ class CheckoutSessionCreateView(APIView):
                 status=status.HTTP_201_CREATED,
             )
         except StripeError:
-            logger.exception(
-                "Stripe Checkout session creation failed"
-            )
+            logger.exception("Stripe Checkout session creation failed")
 
             order.status = Order.Status.FAILED
             order.save(update_fields=["status"])
@@ -445,22 +426,16 @@ class NotificationListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Notification.objects.filter(
-            recipient=self.request.user
-        )
+        return Notification.objects.filter(recipient=self.request.user)
 
 
-class NotificationDetailView(
-    generics.RetrieveUpdateAPIView
-):
+class NotificationDetailView(generics.RetrieveUpdateAPIView):
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
     http_method_names = ["get", "patch", "head", "options"]
 
     def get_queryset(self):
-        return Notification.objects.filter(
-            recipient=self.request.user
-        )
+        return Notification.objects.filter(recipient=self.request.user)
 
 
 class UnreadNotificationCountView(APIView):

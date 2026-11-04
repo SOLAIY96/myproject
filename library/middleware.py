@@ -2,7 +2,6 @@ import logging
 import uuid
 from contextvars import ContextVar
 
-
 request_id_var = ContextVar("request_id", default="-")
 
 
@@ -11,10 +10,7 @@ class RequestIDMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        request_id = request.headers.get(
-            "X-Request-ID",
-            str(uuid.uuid4())
-        )
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
 
         request.request_id = request_id
 

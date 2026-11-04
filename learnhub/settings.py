@@ -15,11 +15,7 @@ from datetime import timedelta
 import sentry_sdk
 import sys
 
-
-RUNNING_TESTS = (
-    "test" in sys.argv
-    or "pytest" in sys.modules
-)
+RUNNING_TESTS = "test" in sys.argv or "pytest" in sys.modules
 
 
 SECRET_KEY = config("SECRET_KEY")
@@ -41,7 +37,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
     default="localhost,127.0.0.1",
-    cast=lambda value: [host.strip() for host in value.split(",")]
+    cast=lambda value: [host.strip() for host in value.split(",")],
 )
 
 
@@ -70,22 +66,18 @@ if DEBUG and not RUNNING_TESTS:
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        #"rest_framework.authentication.SessionAuthentication",
+        # "rest_framework.authentication.SessionAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
-    ),
-
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_THROTTLE_CLASSES": (
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
     ),
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "3/min", #20
-        "user": "5/min", #100
+        "anon": "3/min",  # 20
+        "user": "5/min",  # 100
     },
-
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
 }
@@ -193,9 +185,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-GRAPHENE = {
-    "SCHEMA": "learnhub.schema.schema"
-}
+GRAPHENE = {"SCHEMA": "learnhub.schema.schema"}
 
 INTERNAL_IPS = [
     "127.0.0.1",
@@ -230,20 +220,17 @@ MEDIA_ROOT = BASE_DIR / "media"
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-
     "filters": {
         "request_id": {
             "()": "library.middleware.RequestIDFilter",
         },
     },
-
     "formatters": {
         "simple": {
             "format": "{levelname} {asctime} {name} request_id={request_id} {message}",
             "style": "{",
         },
     },
-
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
@@ -251,31 +238,24 @@ LOGGING = {
             "filters": ["request_id"],
         },
     },
-
-
     "loggers": {
         "django": {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
         },
-
         "library": {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
         },
-
         "learnhub": {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
         },
     },
-
-
 }
-
 
 
 sentry_sdk.init(

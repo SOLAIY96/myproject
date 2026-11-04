@@ -3,10 +3,10 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from pathlib import Path
 
-
 User = get_user_model()
 
 from .models import Task, Post, Comment, Attachment, Notification
+
 
 class TaskSerializer(serializers.ModelSerializer):
     owner = serializers.ReadOnlyField(source="owner.username")
@@ -17,17 +17,13 @@ class TaskSerializer(serializers.ModelSerializer):
 
     def validate_title(self, value):
         if not value.strip():
-            raise serializers.ValidationError(
-                "Task title cannot be empty."
-            )
+            raise serializers.ValidationError("Task title cannot be empty.")
 
         return value.strip()
 
+
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(
-        write_only=True,
-        min_length=8
-    )
+    password = serializers.CharField(write_only=True, min_length=8)
 
     class Meta:
         model = User
@@ -37,14 +33,16 @@ class RegisterSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(
             username=validated_data["username"],
             email=validated_data.get("email"),
-            password=validated_data["password"]
+            password=validated_data["password"],
         )
         return user
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "username", "email"]
+
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(write_only=True)
@@ -77,7 +75,6 @@ class AttachmentSerializer(serializers.ModelSerializer):
         fields = ["id", "file", "owner", "created_at"]
         read_only_fields = ["id", "owner", "created_at"]
 
-
     def validate_file(self, file):
         max_size = 5 * 1024 * 1024
 
@@ -91,9 +88,7 @@ class AttachmentSerializer(serializers.ModelSerializer):
         extension = Path(file.name).suffix.lower()
 
         if file.size > max_size:
-            raise serializers.ValidationError(
-                "File must not exceed 5 MB."
-            )
+            raise serializers.ValidationError("File must not exceed 5 MB.")
 
         if extension not in allowed_signatures:
             raise serializers.ValidationError(
@@ -115,7 +110,6 @@ class AttachmentSerializer(serializers.ModelSerializer):
             )
 
         return file
-
 
 
 class NotificationSerializer(serializers.ModelSerializer):
