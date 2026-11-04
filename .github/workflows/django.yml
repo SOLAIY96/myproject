@@ -31,7 +31,11 @@ jobs:
       POSTGRES_PASSWORD: postgres
       POSTGRES_HOST: localhost
       POSTGRES_PORT: "5432"
-  
+      
+      STRIPE_SECRET_KEY: "sk_test_ci_placeholder"
+      CELERY_BROKER_URL: "memory://"
+
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
