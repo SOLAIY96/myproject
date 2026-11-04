@@ -25,6 +25,7 @@ jobs:
           --health-retries 5
 
     env:
+      CI: "True"
       DEBUG: "False"
       SECRET_KEY: "ci-only-test-secret-key-not-for-production"
       POSTGRES_DB: test_db

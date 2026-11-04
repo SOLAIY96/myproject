@@ -137,7 +137,9 @@ DATABASES = {
 STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")
 STRIPE_PUBLISHABLE_KEY = config("STRIPE_PUBLISHABLE_KEY", default="")
 
-if not STRIPE_SECRET_KEY and not RUNNING_TESTS:
+CI = config("CI", default=False, cast=bool)
+
+if not STRIPE_SECRET_KEY and not (RUNNING_TESTS or CI):
     raise ValueError("STRIPE_SECRET_KEY is not configured")
 
 FRONTEND_URL = config(
