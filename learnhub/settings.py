@@ -19,8 +19,7 @@ RUNNING_TESTS = "test" in sys.argv or "pytest" in sys.modules
 
 
 SECRET_KEY = config("SECRET_KEY")
-DEBUG = config("DEBUG", cast=bool)
-
+DEBUG = config("DEBUG", default=False, cast=bool)
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
