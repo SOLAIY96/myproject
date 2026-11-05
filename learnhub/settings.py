@@ -9,11 +9,12 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
-from pathlib import Path
-from decouple import config
-from datetime import timedelta
-import sentry_sdk
 import sys
+from datetime import timedelta
+from pathlib import Path
+
+import sentry_sdk
+from decouple import config
 
 RUNNING_TESTS = "test" in sys.argv or "pytest" in sys.modules
 

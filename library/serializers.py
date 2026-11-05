@@ -1,11 +1,12 @@
+from pathlib import Path
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
-from pathlib import Path
 
 User = get_user_model()
 
-from .models import Task, Post, Comment, Attachment, Notification
+from .models import Attachment, Comment, Notification, Post, Task
 
 
 class TaskSerializer(serializers.ModelSerializer):

@@ -15,37 +15,32 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-from django.http import JsonResponse
+import logging
+
 from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
-from django.db import connection
 from django.core.cache import cache
+from django.db import connection
+from django.http import JsonResponse
 from django.urls import include, path
 from graphene_django.views import GraphQLView
-from django.conf.urls.static import static
-
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from library.views import (
-    RegisterView,
-    PostListView,
-    TaskListCreateView,
-    TaskDetailView,
-    ChangePasswordView,
     AttachmentListCreateView,
+    ChangePasswordView,
     CheckoutSessionCreateView,
     CheckoutStatusView,
-    stripe_webhook,
     NotificationDetailView,
     NotificationListView,
+    PostListView,
+    RegisterView,
+    TaskDetailView,
+    TaskListCreateView,
     UnreadNotificationCountView,
+    stripe_webhook,
 )
-
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
-
-import logging
 
 logger = logging.getLogger(__name__)
 

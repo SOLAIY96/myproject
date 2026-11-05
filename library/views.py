@@ -1,35 +1,32 @@
 import logging
-
-from rest_framework.filters import SearchFilter
-from rest_framework.generics import ListAPIView
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework import generics, permissions
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.parsers import MultiPartParser, FormParser
 from decimal import Decimal
+
+import stripe
 from django.conf import settings
 from django.db import transaction
 from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-import stripe
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework import generics, permissions, status
+from rest_framework.filters import SearchFilter
+from rest_framework.generics import ListAPIView
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from stripe import StripeError
 
-from .services import create_notification
-
-from .tasks import send_task_notification
-
-from .models import Post, Task, Attachment, Order, Notification, StripeWebhookEvent
+from .models import Attachment, Notification, Order, Post, StripeWebhookEvent, Task
 from .serializers import (
-    TaskSerializer,
-    RegisterSerializer,
-    PostSerializer,
-    ChangePasswordSerializer,
     AttachmentSerializer,
+    ChangePasswordSerializer,
     NotificationSerializer,
+    PostSerializer,
+    RegisterSerializer,
+    TaskSerializer,
 )
+from .services import create_notification
+from .tasks import send_task_notification
 
 logger = logging.getLogger(__name__)
 

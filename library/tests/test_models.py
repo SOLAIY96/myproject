@@ -1,32 +1,27 @@
-from django.test import TestCase, TransactionTestCase
-from django.contrib.auth import get_user_model
-
-from library.models import (
-    Task,
-    Post,
-    Comment,
-    Attachment,
-    Notification,
-    Order,
-    StripeWebhookEvent,
-)
-
 import tempfile
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from unittest.mock import patch
-from django.test import override_settings
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.urls import reverse
-from django.db import close_old_connections, connection
-
-from rest_framework import status
-from rest_framework.test import APITestCase, APIClient
-
 from decimal import Decimal
 from unittest.mock import patch
 
 import stripe
+from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import close_old_connections, connection
+from django.test import TestCase, TransactionTestCase, override_settings
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APIClient, APITestCase
+
+from library.models import (
+    Attachment,
+    Comment,
+    Notification,
+    Order,
+    Post,
+    StripeWebhookEvent,
+    Task,
+)
 
 User = get_user_model()
 
