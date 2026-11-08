@@ -37,9 +37,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
     default="localhost,127.0.0.1",
-    cast=lambda value: [
-        host.strip() for host in value.split(",")
-    ],
+    cast=lambda value: [host.strip() for host in value.split(",")],
 )
 
 CHANNEL_LAYERS = {
@@ -73,9 +71,7 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
-    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_THROTTLE_CLASSES": (
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
@@ -84,9 +80,7 @@ REST_FRAMEWORK = {
         "anon": "3/min",
         "user": "5/min",
     },
-    "DEFAULT_PAGINATION_CLASS": (
-        "rest_framework.pagination.PageNumberPagination"
-    ),
+    "DEFAULT_PAGINATION_CLASS": ("rest_framework.pagination.PageNumberPagination"),
     "PAGE_SIZE": 10,
 }
 
@@ -189,22 +183,13 @@ AUTH_PASSWORD_VALIDATORS = [
         ),
     },
     {
-        "NAME": (
-            "django.contrib.auth.password_validation."
-            "MinimumLengthValidator"
-        ),
+        "NAME": ("django.contrib.auth.password_validation." "MinimumLengthValidator"),
     },
     {
-        "NAME": (
-            "django.contrib.auth.password_validation."
-            "CommonPasswordValidator"
-        ),
+        "NAME": ("django.contrib.auth.password_validation." "CommonPasswordValidator"),
     },
     {
-        "NAME": (
-            "django.contrib.auth.password_validation."
-            "NumericPasswordValidator"
-        ),
+        "NAME": ("django.contrib.auth.password_validation." "NumericPasswordValidator"),
     },
 ]
 
@@ -254,8 +239,7 @@ LOGGING = {
     "formatters": {
         "simple": {
             "format": (
-                "{levelname} {asctime} {name} "
-                "request_id={request_id} {message}"
+                "{levelname} {asctime} {name} " "request_id={request_id} {message}"
             ),
             "style": "{",
         },

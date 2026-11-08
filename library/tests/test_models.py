@@ -524,9 +524,7 @@ class StripeWebhookTests(APITestCase):
     ):
         mock_construct_event.return_value = self.event
 
-        mock_event_create.side_effect = DatabaseError(
-            "Simulated database failure"
-        )
+        mock_event_create.side_effect = DatabaseError("Simulated database failure")
 
         with self.assertRaises(DatabaseError):
             self.post_webhook()
@@ -765,8 +763,6 @@ class StripeWebhookConcurrencyTests(TransactionTestCase):
         )
 
         self.assertEqual(
-            StripeWebhookEvent.objects.filter(
-                event_id="evt_test_concurrent"
-            ).count(),
+            StripeWebhookEvent.objects.filter(event_id="evt_test_concurrent").count(),
             1,
         )

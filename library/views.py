@@ -55,20 +55,14 @@ class TaskListCreateView(generics.ListCreateAPIView):
     serializer_class = TaskSerializer
 
     def get_queryset(self):
-        return (
-            Task.objects
-            .select_related("owner")
-            .filter(owner=self.request.user)
-        )
+        return Task.objects.select_related("owner").filter(owner=self.request.user)
 
     def perform_create(self, serializer):
         task = serializer.save(owner=self.request.user)
 
         create_notification(
             recipient=self.request.user,
-            message=(
-                f'Your task "{task.title}" was created.'
-            ),
+            message=(f'Your task "{task.title}" was created.'),
         )
 
         logger.info(
@@ -131,9 +125,7 @@ class ChangePasswordView(APIView):
         if serializer.is_valid():
             user = request.user
 
-            if not user.check_password(
-                serializer.validated_data["old_password"]
-            ):
+            if not user.check_password(serializer.validated_data["old_password"]):
                 logger.warning(
                     "Password change failed: incorrect old password",
                     extra={"user_id": user.id},
@@ -164,10 +156,8 @@ class AttachmentListCreateView(generics.ListCreateAPIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
-        return (
-            Attachment.objects
-            .filter(owner=self.request.user)
-            .order_by("-created_at")
+        return Attachment.objects.filter(owner=self.request.user).order_by(
+            "-created_at"
         )
 
     def perform_create(self, serializer):
