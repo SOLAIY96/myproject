@@ -37,7 +37,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
     default="localhost,127.0.0.1",
-    cast=lambda value: [host.strip() for host in value.split(",")],
+    cast=lambda value: [
+        host.strip() for host in value.split(",")
+    ],
 )
 
 CHANNEL_LAYERS = {
@@ -183,13 +185,13 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": (
             "django.contrib.auth.password_validation."
-            "UserAttributeSimilarityValidator",
+            "UserAttributeSimilarityValidator"
         ),
     },
     {
         "NAME": (
-            "django.contrib.auth."
-            "password_validation.MinimumLengthValidator"
+            "django.contrib.auth.password_validation."
+            "MinimumLengthValidator"
         ),
     },
     {
