@@ -55,7 +55,9 @@ class TaskListCreateView(generics.ListCreateAPIView):
     serializer_class = TaskSerializer
 
     def get_queryset(self):
-        return Task.objects.select_related("owner").filter(owner=self.request.user)
+        return Task.objects.select_related(
+            "owner"
+        ).filter(owner=self.request.user)
 
     def perform_create(self, serializer):
         task = serializer.save(owner=self.request.user)
@@ -125,7 +127,9 @@ class ChangePasswordView(APIView):
         if serializer.is_valid():
             user = request.user
 
-            if not user.check_password(serializer.validated_data["old_password"]):
+            if not user.check_password(
+                serializer.validated_data["old_password"]
+            ):
                 logger.warning(
                     "Password change failed: incorrect old password",
                     extra={"user_id": user.id},
