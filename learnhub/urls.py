@@ -25,8 +25,10 @@ from django.db import connection
 from django.http import JsonResponse
 from django.urls import include, path
 from graphene_django.views import GraphQLView
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 from library.views import (
     AttachmentListCreateView,
     ChangePasswordView,
@@ -106,7 +108,11 @@ urlpatterns = [
     path("posts/", PostListView.as_view()),
     path("tasks/", TaskListCreateView.as_view(), name="task-list"),
     path("tasks/<int:pk>/", TaskDetailView.as_view(), name="task-detail"),
-    path("change-password/", ChangePasswordView.as_view(), name="change-password"),
+    path(
+        "change-password/",
+        ChangePasswordView.as_view(),
+        name="change-password",
+    ),
     path(
         "attachments/",
         AttachmentListCreateView.as_view(),

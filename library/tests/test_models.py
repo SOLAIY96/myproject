@@ -7,8 +7,16 @@ from unittest.mock import patch
 import stripe
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db import close_old_connections, connection
-from django.test import TestCase, TransactionTestCase, override_settings
+from django.db import (
+    DatabaseError,
+    close_old_connections,
+    connection,
+)
+from django.test import (
+    TestCase,
+    TransactionTestCase,
+    override_settings,
+)
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
@@ -91,15 +99,14 @@ class CommentModelTests(TestCase):
         self.assertIn("commentuser", str(comment))
 
 
-User = get_user_model()
-
-
 class AttachmentUploadTests(APITestCase):
     def setUp(self):
         self.temp_media = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp_media.cleanup)
 
-        media_settings = override_settings(MEDIA_ROOT=self.temp_media.name)
+        media_settings = override_settings(
+            MEDIA_ROOT=self.temp_media.name
+        )
         media_settings.enable()
         self.addCleanup(media_settings.disable)
 
@@ -249,7 +256,10 @@ class AttachmentUploadTests(APITestCase):
 
         response = self.client.get(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
 
         # Support both paginated and unpaginated API responses.
         if isinstance(response.data, dict):
@@ -318,7 +328,10 @@ class NotificationAPITests(APITestCase):
 
         response = self.client.get(reverse("notification-list"))
 
-        returned_ids = [item["id"] for item in response.data["results"]]
+        returned_ids = [
+            item["id"] for item in response.data["results"]
+        ]
+
         self.assertNotIn(other_notification.id, returned_ids)
 
     def test_user_can_mark_notification_as_read(self):
@@ -372,7 +385,9 @@ class NotificationAPITests(APITestCase):
             message="Bob's notification",
         )
 
-        response = self.client.get(reverse("notification-unread-count"))
+        response = self.client.get(
+            reverse("notification-unread-count")
+        )
 
         self.assertEqual(
             response.status_code,
@@ -435,7 +450,10 @@ class StripeWebhookTests(APITestCase):
         )
 
     @patch("library.views.stripe.Webhook.construct_event")
-    def test_valid_paid_webhook_marks_order_paid(self, mock_construct_event):
+    def test_valid_paid_webhook_marks_order_paid(
+        self,
+        mock_construct_event,
+    ):
         mock_construct_event.return_value = self.event
 
         response = self.post_webhook()
@@ -455,10 +473,15 @@ class StripeWebhookTests(APITestCase):
         )
 
     @patch("library.views.stripe.Webhook.construct_event")
-    def test_invalid_signature_does_not_mark_order_paid(self, mock_construct_event):
-        mock_construct_event.side_effect = stripe.SignatureVerificationError(
-            "Invalid signature",
-            "invalid_signature",
+    def test_invalid_signature_does_not_mark_order_paid(
+        self,
+        mock_construct_event,
+    ):
+        mock_construct_event.side_effect = (
+            stripe.SignatureVerificationError(
+                "Invalid signature",
+                "invalid_signature",
+            )
         )
 
         response = self.post_webhook()
@@ -472,7 +495,10 @@ class StripeWebhookTests(APITestCase):
         )
 
     @patch("library.views.stripe.Webhook.construct_event")
-    def test_duplicate_paid_event_is_safe(self, mock_construct_event):
+    def test_duplicate_paid_event_is_safe(
+        self,
+        mock_construct_event,
+    ):
         mock_construct_event.return_value = self.event
 
         first_response = self.post_webhook()
@@ -491,12 +517,12 @@ class StripeWebhookTests(APITestCase):
 
         # The same Stripe event should be recorded exactly once.
         self.assertEqual(
-            StripeWebhookEvent.objects.filter(event_id="evt_test_123").count(),
+            StripeWebhookEvent.objects.filter(
+                event_id="evt_test_123"
+            ).count(),
             1,
         )
 
-        # Both deliveries are handled, but the order remains
-        # paid and no second order is created.
         self.assertEqual(Order.objects.count(), 1)
 
     @patch("library.views.StripeWebhookEvent.objects.create")
@@ -506,10 +532,11 @@ class StripeWebhookTests(APITestCase):
         mock_construct_event,
         mock_event_create,
     ):
-        from django.db import DatabaseError
-
         mock_construct_event.return_value = self.event
-        mock_event_create.side_effect = DatabaseError("Simulated database failure")
+
+        mock_event_create.side_effect = DatabaseError(
+            "Simulated database failure"
+        )
 
         with self.assertRaises(DatabaseError):
             self.post_webhook()
@@ -520,16 +547,23 @@ class StripeWebhookTests(APITestCase):
             self.order.status,
             Order.Status.PENDING,
         )
+
         self.assertFalse(
-            StripeWebhookEvent.objects.filter(event_id="evt_test_123").exists()
+            StripeWebhookEvent.objects.filter(
+                event_id="evt_test_123"
+            ).exists()
         )
 
     @patch("library.views.stripe.Webhook.construct_event")
-    def test_amount_mismatch_does_not_mark_order_paid(self, mock_construct_event):
+    def test_amount_mismatch_does_not_mark_order_paid(
+        self,
+        mock_construct_event,
+    ):
         bad_session = {
             **self.session,
             "amount_total": 999,
         }
+
         mock_construct_event.return_value = {
             **self.event,
             "data": {"object": bad_session},
@@ -546,11 +580,15 @@ class StripeWebhookTests(APITestCase):
         )
 
     @patch("library.views.stripe.Webhook.construct_event")
-    def test_currency_mismatch_does_not_mark_order_paid(self, mock_construct_event):
+    def test_currency_mismatch_does_not_mark_order_paid(
+        self,
+        mock_construct_event,
+    ):
         bad_session = {
             **self.session,
             "currency": "eur",
         }
+
         mock_construct_event.return_value = {
             **self.event,
             "data": {"object": bad_session},
@@ -567,11 +605,15 @@ class StripeWebhookTests(APITestCase):
         )
 
     @patch("library.views.stripe.Webhook.construct_event")
-    def test_unpaid_session_does_not_mark_order_paid(self, mock_construct_event):
+    def test_unpaid_session_does_not_mark_order_paid(
+        self,
+        mock_construct_event,
+    ):
         unpaid_session = {
             **self.session,
             "payment_status": "unpaid",
         }
+
         mock_construct_event.return_value = {
             **self.event,
             "data": {"object": unpaid_session},
@@ -588,11 +630,15 @@ class StripeWebhookTests(APITestCase):
         )
 
     @patch("library.views.stripe.Webhook.construct_event")
-    def test_unknown_session_does_not_update_order(self, mock_construct_event):
+    def test_unknown_session_does_not_update_order(
+        self,
+        mock_construct_event,
+    ):
         unknown_session = {
             **self.session,
             "id": "cs_test_unknown",
         }
+
         mock_construct_event.return_value = {
             **self.event,
             "data": {"object": unknown_session},
@@ -609,7 +655,10 @@ class StripeWebhookTests(APITestCase):
         )
 
     @patch("library.views.stripe.Webhook.construct_event")
-    def test_failed_order_cannot_be_marked_paid(self, mock_construct_event):
+    def test_failed_order_cannot_be_marked_paid(
+        self,
+        mock_construct_event,
+    ):
         self.order.status = Order.Status.FAILED
         self.order.save(update_fields=["status"])
 
@@ -625,7 +674,10 @@ class StripeWebhookTests(APITestCase):
         )
 
     @patch("library.views.stripe.Webhook.construct_event")
-    def test_cancelled_order_cannot_be_marked_paid(self, mock_construct_event):
+    def test_cancelled_order_cannot_be_marked_paid(
+        self,
+        mock_construct_event,
+    ):
         self.order.status = Order.Status.CANCELLED
         self.order.save(update_fields=["status"])
 
@@ -646,7 +698,9 @@ class StripeWebhookConcurrencyTests(TransactionTestCase):
 
     def setUp(self):
         if connection.vendor != "postgresql":
-            self.skipTest("This concurrency test requires PostgreSQL.")
+            self.skipTest(
+                "This concurrency test requires PostgreSQL."
+            )
 
         self.webhook_url = "/payments/webhook/"
         self.webhook_secret = "whsec_test_secret"
@@ -684,36 +738,55 @@ class StripeWebhookConcurrencyTests(TransactionTestCase):
         }
 
     @patch("library.views.stripe.Webhook.construct_event")
-    def test_concurrent_duplicate_delivery_is_safe(self, mock_construct_event):
+    def test_concurrent_duplicate_delivery_is_safe(
+        self,
+        mock_construct_event,
+    ):
         mock_construct_event.return_value = self.event
 
         barrier = threading.Barrier(2)
 
         def send_webhook():
             close_old_connections()
+
             try:
                 client = APIClient()
                 barrier.wait(timeout=10)
+
                 response = client.post(
                     self.webhook_url,
                     data=b'{"test": "payload"}',
                     content_type="application/json",
                     HTTP_STRIPE_SIGNATURE="test_signature",
                 )
+
                 return response.status_code
+
             finally:
                 close_old_connections()
 
         with ThreadPoolExecutor(max_workers=2) as executor:
-            futures = [executor.submit(send_webhook) for _ in range(2)]
-            statuses = [future.result(timeout=30) for future in futures]
+            futures = [
+                executor.submit(send_webhook)
+                for _ in range(2)
+            ]
+
+            statuses = [
+                future.result(timeout=30)
+                for future in futures
+            ]
 
         self.assertEqual(statuses, [200, 200])
 
         self.order.refresh_from_db()
-        self.assertEqual(self.order.status, Order.Status.PAID)
+        self.assertEqual(
+            self.order.status,
+            Order.Status.PAID,
+        )
 
         self.assertEqual(
-            StripeWebhookEvent.objects.filter(event_id="evt_test_concurrent").count(),
+            StripeWebhookEvent.objects.filter(
+                event_id="evt_test_concurrent"
+            ).count(),
             1,
         )

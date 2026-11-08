@@ -5,7 +5,6 @@ import stripe
 from django.conf import settings
 from django.db import transaction
 from django.http import HttpResponse
-from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics, permissions, status
 from rest_framework.filters import SearchFilter
@@ -16,7 +15,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from stripe import StripeError
 
-from .models import Attachment, Notification, Order, Post, StripeWebhookEvent, Task
+from .models import (
+    Attachment,
+    Notification,
+    Order,
+    Post,
+    StripeWebhookEvent,
+    Task,
+)
 from .serializers import (
     AttachmentSerializer,
     ChangePasswordSerializer,
@@ -41,7 +47,6 @@ class PostListView(ListAPIView):
     filter_backends = [SearchFilter]
     search_fields = ["title"]
     queryset = Post.objects.prefetch_related("comments")
-
     serializer_class = PostSerializer
 
 
@@ -50,7 +55,9 @@ class TaskListCreateView(generics.ListCreateAPIView):
     serializer_class = TaskSerializer
 
     def get_queryset(self):
-        return Task.objects.select_related("owner").filter(owner=self.request.user)
+        return Task.objects.select_related(
+            "owner"
+        ).filter(owner=self.request.user)
 
     def perform_create(self, serializer):
         task = serializer.save(owner=self.request.user)
@@ -100,7 +107,6 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def perform_destroy(self, instance):
         task_id = instance.id
-
         instance.delete()
 
         logger.info(
@@ -121,12 +127,12 @@ class ChangePasswordView(APIView):
         if serializer.is_valid():
             user = request.user
 
-            if not user.check_password(serializer.validated_data["old_password"]):
+            if not user.check_password(
+                serializer.validated_data["old_password"]
+            ):
                 logger.warning(
                     "Password change failed: incorrect old password",
-                    extra={
-                        "user_id": user.id,
-                    },
+                    extra={"user_id": user.id},
                 )
 
                 return Response(
@@ -142,7 +148,10 @@ class ChangePasswordView(APIView):
                 status=status.HTTP_200_OK,
             )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 class AttachmentListCreateView(generics.ListCreateAPIView):
@@ -151,15 +160,12 @@ class AttachmentListCreateView(generics.ListCreateAPIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
-        return Attachment.objects.filter(owner=self.request.user).order_by(
-            "-created_at"
-        )
+        return Attachment.objects.filter(
+            owner=self.request.user
+        ).order_by("-created_at")
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
-
-
-logger = logging.getLogger(__name__)
 
 
 @csrf_exempt
@@ -169,6 +175,7 @@ def stripe_webhook(request):
         return HttpResponse(status=405)
 
     webhook_secret = getattr(settings, "STRIPE_WEBHOOK_SECRET", "")
+
     if not webhook_secret:
         logger.error("Stripe webhook secret is not configured")
         return HttpResponse(status=500)
@@ -209,17 +216,19 @@ def stripe_webhook(request):
 
     try:
         with transaction.atomic():
-            # Fast path for events already fully handled.
-            if StripeWebhookEvent.objects.filter(event_id=event_id).exists():
+            if StripeWebhookEvent.objects.filter(
+                event_id=event_id
+            ).exists():
                 return HttpResponse(status=200)
 
             order = Order.objects.select_for_update().get(
                 provider_session_id=session_id,
             )
 
-            # Recheck after acquiring the order lock. This handles
-            # concurrent deliveries of the same event for this order.
-            if StripeWebhookEvent.objects.filter(event_id=event_id).exists():
+            # Recheck after acquiring the order lock.
+            if StripeWebhookEvent.objects.filter(
+                event_id=event_id
+            ).exists():
                 return HttpResponse(status=200)
 
             if session.get("payment_status") != "paid":
@@ -227,13 +236,14 @@ def stripe_webhook(request):
                     "Stripe session is not paid: order_id=%s",
                     order.pk,
                 )
+
                 StripeWebhookEvent.objects.create(
                     event_id=event_id,
                     event_type=event_type,
                 )
+
                 return HttpResponse(status=200)
 
-            # This implementation currently supports USD only.
             if order.currency.upper() != "USD":
                 logger.error(
                     "Unsupported payment currency: order_id=%s",
@@ -262,13 +272,14 @@ def stripe_webhook(request):
                     order.pk,
                     order.status,
                 )
+
                 StripeWebhookEvent.objects.create(
                     event_id=event_id,
                     event_type=event_type,
                 )
+
                 return HttpResponse(status=200)
 
-            # This record and the order update commit together.
             order.status = Order.Status.PAID
             order.save(update_fields=["status"])
 
@@ -281,8 +292,6 @@ def stripe_webhook(request):
                 ),
             )
 
-            # The order update, notification, and webhook record
-            # are committed together.
             StripeWebhookEvent.objects.create(
                 event_id=event_id,
                 event_type=event_type,
@@ -307,7 +316,6 @@ def stripe_webhook(request):
 class CheckoutSessionCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
-    # Fixed server-controlled test purchase: OMR 1.000.
     # Fixed server-controlled test purchase: USD 10.00.
     ORDER_AMOUNT = Decimal("10.00")
     CURRENCY = "usd"
@@ -354,12 +362,16 @@ class CheckoutSessionCreateView(APIView):
                     }
                 ],
                 metadata={"order_id": str(order.pk)},
-                payment_intent_data={"metadata": {"order_id": str(order.pk)}},
+                payment_intent_data={
+                    "metadata": {"order_id": str(order.pk)}
+                },
                 success_url=(
                     f"{settings.FRONTEND_URL}/?checkout=success"
                     "&session_id={CHECKOUT_SESSION_ID}"
                 ),
-                cancel_url=f"{settings.FRONTEND_URL}/?checkout=cancelled",
+                cancel_url=(
+                    f"{settings.FRONTEND_URL}/?checkout=cancelled"
+                ),
             )
 
             order.provider_session_id = session.id
@@ -372,6 +384,7 @@ class CheckoutSessionCreateView(APIView):
                 },
                 status=status.HTTP_201_CREATED,
             )
+
         except StripeError:
             logger.exception("Stripe Checkout session creation failed")
 
@@ -379,7 +392,11 @@ class CheckoutSessionCreateView(APIView):
             order.save(update_fields=["status"])
 
             return Response(
-                {"error": "Unable to create the Stripe checkout session."},
+                {
+                    "error": (
+                        "Unable to create the Stripe checkout session."
+                    )
+                },
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
@@ -388,7 +405,9 @@ class CheckoutStatusView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        session_id = request.query_params.get("session_id", "").strip()
+        session_id = request.query_params.get(
+            "session_id", ""
+        ).strip()
 
         if not session_id:
             return Response(
@@ -401,6 +420,7 @@ class CheckoutStatusView(APIView):
                 provider_session_id=session_id,
                 user=request.user,
             )
+
         except Order.DoesNotExist:
             return Response(
                 {"error": "Order not found."},
@@ -423,7 +443,9 @@ class NotificationListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Notification.objects.filter(recipient=self.request.user)
+        return Notification.objects.filter(
+            recipient=self.request.user
+        )
 
 
 class NotificationDetailView(generics.RetrieveUpdateAPIView):
@@ -432,7 +454,9 @@ class NotificationDetailView(generics.RetrieveUpdateAPIView):
     http_method_names = ["get", "patch", "head", "options"]
 
     def get_queryset(self):
-        return Notification.objects.filter(recipient=self.request.user)
+        return Notification.objects.filter(
+            recipient=self.request.user
+        )
 
 
 class UnreadNotificationCountView(APIView):
