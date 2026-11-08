@@ -29,6 +29,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+
 from library.views import (
     AttachmentListCreateView,
     ChangePasswordView,
