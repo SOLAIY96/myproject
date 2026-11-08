@@ -104,9 +104,7 @@ class AttachmentUploadTests(APITestCase):
         self.temp_media = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp_media.cleanup)
 
-        media_settings = override_settings(
-            MEDIA_ROOT=self.temp_media.name
-        )
+        media_settings = override_settings(MEDIA_ROOT=self.temp_media.name)
         media_settings.enable()
         self.addCleanup(media_settings.disable)
 
@@ -328,9 +326,7 @@ class NotificationAPITests(APITestCase):
 
         response = self.client.get(reverse("notification-list"))
 
-        returned_ids = [
-            item["id"] for item in response.data["results"]
-        ]
+        returned_ids = [item["id"] for item in response.data["results"]]
 
         self.assertNotIn(other_notification.id, returned_ids)
 
@@ -385,9 +381,7 @@ class NotificationAPITests(APITestCase):
             message="Bob's notification",
         )
 
-        response = self.client.get(
-            reverse("notification-unread-count")
-        )
+        response = self.client.get(reverse("notification-unread-count"))
 
         self.assertEqual(
             response.status_code,
@@ -477,11 +471,9 @@ class StripeWebhookTests(APITestCase):
         self,
         mock_construct_event,
     ):
-        mock_construct_event.side_effect = (
-            stripe.SignatureVerificationError(
-                "Invalid signature",
-                "invalid_signature",
-            )
+        mock_construct_event.side_effect = stripe.SignatureVerificationError(
+            "Invalid signature",
+            "invalid_signature",
         )
 
         response = self.post_webhook()
@@ -517,9 +509,7 @@ class StripeWebhookTests(APITestCase):
 
         # The same Stripe event should be recorded exactly once.
         self.assertEqual(
-            StripeWebhookEvent.objects.filter(
-                event_id="evt_test_123"
-            ).count(),
+            StripeWebhookEvent.objects.filter(event_id="evt_test_123").count(),
             1,
         )
 
@@ -534,9 +524,7 @@ class StripeWebhookTests(APITestCase):
     ):
         mock_construct_event.return_value = self.event
 
-        mock_event_create.side_effect = DatabaseError(
-            "Simulated database failure"
-        )
+        mock_event_create.side_effect = DatabaseError("Simulated database failure")
 
         with self.assertRaises(DatabaseError):
             self.post_webhook()
@@ -549,9 +537,7 @@ class StripeWebhookTests(APITestCase):
         )
 
         self.assertFalse(
-            StripeWebhookEvent.objects.filter(
-                event_id="evt_test_123"
-            ).exists()
+            StripeWebhookEvent.objects.filter(event_id="evt_test_123").exists()
         )
 
     @patch("library.views.stripe.Webhook.construct_event")
@@ -698,9 +684,7 @@ class StripeWebhookConcurrencyTests(TransactionTestCase):
 
     def setUp(self):
         if connection.vendor != "postgresql":
-            self.skipTest(
-                "This concurrency test requires PostgreSQL."
-            )
+            self.skipTest("This concurrency test requires PostgreSQL.")
 
         self.webhook_url = "/payments/webhook/"
         self.webhook_secret = "whsec_test_secret"
@@ -766,15 +750,9 @@ class StripeWebhookConcurrencyTests(TransactionTestCase):
                 close_old_connections()
 
         with ThreadPoolExecutor(max_workers=2) as executor:
-            futures = [
-                executor.submit(send_webhook)
-                for _ in range(2)
-            ]
+            futures = [executor.submit(send_webhook) for _ in range(2)]
 
-            statuses = [
-                future.result(timeout=30)
-                for future in futures
-            ]
+            statuses = [future.result(timeout=30) for future in futures]
 
         self.assertEqual(statuses, [200, 200])
 
@@ -785,8 +763,6 @@ class StripeWebhookConcurrencyTests(TransactionTestCase):
         )
 
         self.assertEqual(
-            StripeWebhookEvent.objects.filter(
-                event_id="evt_test_concurrent"
-            ).count(),
+            StripeWebhookEvent.objects.filter(event_id="evt_test_concurrent").count(),
             1,
         )

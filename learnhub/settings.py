@@ -71,9 +71,7 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
-    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_THROTTLE_CLASSES": (
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
@@ -82,9 +80,7 @@ REST_FRAMEWORK = {
         "anon": "3/min",
         "user": "5/min",
     },
-    "DEFAULT_PAGINATION_CLASS": (
-        "rest_framework.pagination.PageNumberPagination"
-    ),
+    "DEFAULT_PAGINATION_CLASS": ("rest_framework.pagination.PageNumberPagination"),
     "PAGE_SIZE": 10,
 }
 
@@ -187,19 +183,13 @@ AUTH_PASSWORD_VALIDATORS = [
         ),
     },
     {
-        "NAME": (
-            "django.contrib.auth.password_validation.MinimumLengthValidator"
-        ),
+        "NAME": ("django.contrib.auth.password_validation.MinimumLengthValidator"),
     },
     {
-        "NAME": (
-            "django.contrib.auth.password_validation.CommonPasswordValidator"
-        ),
+        "NAME": ("django.contrib.auth.password_validation.CommonPasswordValidator"),
     },
     {
-        "NAME": (
-            "django.contrib.auth.password_validation.NumericPasswordValidator"
-        ),
+        "NAME": ("django.contrib.auth.password_validation.NumericPasswordValidator"),
     },
 ]
 
@@ -241,23 +231,19 @@ MEDIA_ROOT = BASE_DIR / "media"
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-
     "filters": {
         "request_id": {
             "()": "library.middleware.RequestIDFilter",
         },
     },
-
     "formatters": {
         "simple": {
             "format": (
-                "{levelname} {asctime} {name} "
-                "request_id={request_id} {message}"
+                "{levelname} {asctime} {name} " "request_id={request_id} {message}"
             ),
             "style": "{",
         },
     },
-
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
@@ -265,7 +251,6 @@ LOGGING = {
             "filters": ["request_id"],
         },
     },
-
     "loggers": {
         "django": {
             "handlers": ["console"],
@@ -284,7 +269,6 @@ LOGGING = {
         },
     },
 }
-
 
 
 sentry_sdk.init(

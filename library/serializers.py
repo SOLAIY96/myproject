@@ -6,7 +6,6 @@ from rest_framework import serializers
 
 from .models import Attachment, Comment, Notification, Post, Task
 
-
 User = get_user_model()
 
 

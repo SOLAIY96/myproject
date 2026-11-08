@@ -55,9 +55,7 @@ class TaskListCreateView(generics.ListCreateAPIView):
     serializer_class = TaskSerializer
 
     def get_queryset(self):
-        return Task.objects.select_related(
-            "owner"
-        ).filter(owner=self.request.user)
+        return Task.objects.select_related("owner").filter(owner=self.request.user)
 
     def perform_create(self, serializer):
         task = serializer.save(owner=self.request.user)
@@ -127,9 +125,7 @@ class ChangePasswordView(APIView):
         if serializer.is_valid():
             user = request.user
 
-            if not user.check_password(
-                serializer.validated_data["old_password"]
-            ):
+            if not user.check_password(serializer.validated_data["old_password"]):
                 logger.warning(
                     "Password change failed: incorrect old password",
                     extra={"user_id": user.id},
@@ -160,9 +156,9 @@ class AttachmentListCreateView(generics.ListCreateAPIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
-        return Attachment.objects.filter(
-            owner=self.request.user
-        ).order_by("-created_at")
+        return Attachment.objects.filter(owner=self.request.user).order_by(
+            "-created_at"
+        )
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
@@ -216,9 +212,7 @@ def stripe_webhook(request):
 
     try:
         with transaction.atomic():
-            if StripeWebhookEvent.objects.filter(
-                event_id=event_id
-            ).exists():
+            if StripeWebhookEvent.objects.filter(event_id=event_id).exists():
                 return HttpResponse(status=200)
 
             order = Order.objects.select_for_update().get(
@@ -226,9 +220,7 @@ def stripe_webhook(request):
             )
 
             # Recheck after acquiring the order lock.
-            if StripeWebhookEvent.objects.filter(
-                event_id=event_id
-            ).exists():
+            if StripeWebhookEvent.objects.filter(event_id=event_id).exists():
                 return HttpResponse(status=200)
 
             if session.get("payment_status") != "paid":
@@ -362,16 +354,12 @@ class CheckoutSessionCreateView(APIView):
                     }
                 ],
                 metadata={"order_id": str(order.pk)},
-                payment_intent_data={
-                    "metadata": {"order_id": str(order.pk)}
-                },
+                payment_intent_data={"metadata": {"order_id": str(order.pk)}},
                 success_url=(
                     f"{settings.FRONTEND_URL}/?checkout=success"
                     "&session_id={CHECKOUT_SESSION_ID}"
                 ),
-                cancel_url=(
-                    f"{settings.FRONTEND_URL}/?checkout=cancelled"
-                ),
+                cancel_url=(f"{settings.FRONTEND_URL}/?checkout=cancelled"),
             )
 
             order.provider_session_id = session.id
@@ -392,11 +380,7 @@ class CheckoutSessionCreateView(APIView):
             order.save(update_fields=["status"])
 
             return Response(
-                {
-                    "error": (
-                        "Unable to create the Stripe checkout session."
-                    )
-                },
+                {"error": ("Unable to create the Stripe checkout session.")},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
@@ -405,9 +389,7 @@ class CheckoutStatusView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        session_id = request.query_params.get(
-            "session_id", ""
-        ).strip()
+        session_id = request.query_params.get("session_id", "").strip()
 
         if not session_id:
             return Response(
@@ -443,9 +425,7 @@ class NotificationListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Notification.objects.filter(
-            recipient=self.request.user
-        )
+        return Notification.objects.filter(recipient=self.request.user)
 
 
 class NotificationDetailView(generics.RetrieveUpdateAPIView):
@@ -454,9 +434,7 @@ class NotificationDetailView(generics.RetrieveUpdateAPIView):
     http_method_names = ["get", "patch", "head", "options"]
 
     def get_queryset(self):
-        return Notification.objects.filter(
-            recipient=self.request.user
-        )
+        return Notification.objects.filter(recipient=self.request.user)
 
 
 class UnreadNotificationCountView(APIView):
