@@ -63,6 +63,9 @@ jobs:
 
       - name: Run Django Check
         run: python manage.py check
+      
+      - name: Check Migrations
+        run: python manage.py makemigrations --check --dry-run
 
       - name: Run Tests
         run: python manage.py test --verbosity 2
