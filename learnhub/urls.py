@@ -14,39 +14,39 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.http import JsonResponse
+
+import logging
+
 from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
-from django.db import connection
 from django.core.cache import cache
+from django.db import connection
+from django.http import JsonResponse
 from django.urls import include, path
 from graphene_django.views import GraphQLView
-from django.conf.urls.static import static
-
-
-from library.views import (
-    RegisterView,
-    PostListView,
-    TaskListCreateView,
-    TaskDetailView,
-    ChangePasswordView,
-    AttachmentListCreateView,
-    CheckoutSessionCreateView,
-    CheckoutStatusView,
-    stripe_webhook,
-    NotificationDetailView,
-    NotificationListView,
-    UnreadNotificationCountView
-)
-
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
 
-import logging
+from library.views import (
+    AttachmentListCreateView,
+    ChangePasswordView,
+    CheckoutSessionCreateView,
+    CheckoutStatusView,
+    NotificationDetailView,
+    NotificationListView,
+    PostListView,
+    RegisterView,
+    TaskDetailView,
+    TaskListCreateView,
+    UnreadNotificationCountView,
+    stripe_webhook,
+)
 
 logger = logging.getLogger(__name__)
+
 
 def health_live(request):
     logger.info(
@@ -58,13 +58,11 @@ def health_live(request):
     return JsonResponse({"status": "alive"})
 
 
-
 def health_ready(request):
     checks = {
         "database": False,
         "redis": False,
     }
-
 
     try:
         with connection.cursor() as cursor:
@@ -74,8 +72,7 @@ def health_ready(request):
         logger.exception(
             "event=health_check_failed dependency=database endpoint=%s",
             request.path,
-    )
-
+        )
 
     try:
         cache.set("health_check", "ok", timeout=10)
@@ -84,8 +81,7 @@ def health_ready(request):
         logger.exception(
             "event=health_check_failed dependency=redis endpoint=%s",
             request.path,
-    )
-
+        )
 
     ready = all(checks.values())
 
@@ -103,59 +99,57 @@ def debug_failure(request):
     raise Exception("Intentional Day 5 debugging failure")
 
 
-
 urlpatterns = [
     path("health/live/", health_live, name="health-live"),
     path("health/ready/", health_ready, name="health-ready"),
-
     path("token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-
     path("admin/", admin.site.urls),
     path("register/", RegisterView.as_view(), name="register"),
     path("posts/", PostListView.as_view()),
     path("tasks/", TaskListCreateView.as_view(), name="task-list"),
     path("tasks/<int:pk>/", TaskDetailView.as_view(), name="task-detail"),
-    path("change-password/", ChangePasswordView.as_view(), name="change-password"),
     path(
-    "attachments/",
-    AttachmentListCreateView.as_view(),
-    name="attachment-list",
+        "change-password/",
+        ChangePasswordView.as_view(),
+        name="change-password",
     ),
     path(
-    "payments/checkout/",
-    CheckoutSessionCreateView.as_view(),
-    name="stripe-checkout",
+        "attachments/",
+        AttachmentListCreateView.as_view(),
+        name="attachment-list",
     ),
     path(
-    "payments/checkout/status/",
-    CheckoutStatusView.as_view(),
-    name="stripe-checkout-status",
+        "payments/checkout/",
+        CheckoutSessionCreateView.as_view(),
+        name="stripe-checkout",
     ),
     path(
-    "payments/webhook/",
-    stripe_webhook,
-    name="stripe-webhook",
-    ),
-
-    path(
-    "notifications/",
-    NotificationListView.as_view(),
-    name="notification-list",
+        "payments/checkout/status/",
+        CheckoutStatusView.as_view(),
+        name="stripe-checkout-status",
     ),
     path(
-    "notifications/unread-count/",
-    UnreadNotificationCountView.as_view(),
-    name="notification-unread-count",
+        "payments/webhook/",
+        stripe_webhook,
+        name="stripe-webhook",
     ),
     path(
-    "notifications/<int:pk>/",
-    NotificationDetailView.as_view(),
-    name="notification-detail",
+        "notifications/",
+        NotificationListView.as_view(),
+        name="notification-list",
     ),
-
+    path(
+        "notifications/unread-count/",
+        UnreadNotificationCountView.as_view(),
+        name="notification-unread-count",
+    ),
+    path(
+        "notifications/<int:pk>/",
+        NotificationDetailView.as_view(),
+        name="notification-detail",
+    ),
     path("graphql/", GraphQLView.as_view(graphiql=True)),
-
 ]
 
 
@@ -163,7 +157,6 @@ if settings.DEBUG:
     urlpatterns += [
         path("debug/failure/", debug_failure, name="debug-failure"),
         path("__debug__/", include("debug_toolbar.urls")),
-
     ]
 
     urlpatterns += static(

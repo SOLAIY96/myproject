@@ -9,22 +9,18 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
-from pathlib import Path
-from decouple import config
-from datetime import timedelta
-import sentry_sdk
 import sys
+from datetime import timedelta
+from pathlib import Path
 
+import sentry_sdk
+from decouple import config
 
-RUNNING_TESTS = (
-    "test" in sys.argv
-    or "pytest" in sys.modules
-)
+RUNNING_TESTS = "test" in sys.argv or "pytest" in sys.modules
 
 
 SECRET_KEY = config("SECRET_KEY")
-DEBUG = config("DEBUG", cast=bool)
-
+DEBUG = config("DEBUG", default=False, cast=bool)
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
@@ -41,11 +37,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
     default="localhost,127.0.0.1",
-    cast=lambda value: [host.strip() for host in value.split(",")]
+    cast=lambda value: [host.strip() for host in value.split(",")],
 )
 
-
-CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 # Application definition
 
@@ -70,23 +69,18 @@ if DEBUG and not RUNNING_TESTS:
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        #"rest_framework.authentication.SessionAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
-    ),
-
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_THROTTLE_CLASSES": (
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
     ),
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "3/min", #20
-        "user": "5/min", #100
+        "anon": "3/min",
+        "user": "5/min",
     },
-
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "DEFAULT_PAGINATION_CLASS": ("rest_framework.pagination.PageNumberPagination"),
     "PAGE_SIZE": 10,
 }
 
@@ -146,13 +140,16 @@ DATABASES = {
 STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")
 STRIPE_PUBLISHABLE_KEY = config("STRIPE_PUBLISHABLE_KEY", default="")
 
+CI = config("CI", default=False, cast=bool)
+
+if not STRIPE_SECRET_KEY and not (RUNNING_TESTS or CI):
+    raise ValueError("STRIPE_SECRET_KEY is not configured")
+
 FRONTEND_URL = config(
     "FRONTEND_URL",
     default="http://localhost:5173",
 ).rstrip("/")
 
-if not STRIPE_SECRET_KEY:
-    raise ValueError("STRIPE_SECRET_KEY is not configured")
 
 STRIPE_WEBHOOK_SECRET = config(
     "STRIPE_WEBHOOK_SECRET",
@@ -180,21 +177,24 @@ CACHES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "NAME": (
+            "django.contrib.auth.password_validation."
+            "UserAttributeSimilarityValidator"
+        ),
     },
     {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "NAME": ("django.contrib.auth.password_validation." "MinimumLengthValidator"),
     },
     {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+        "NAME": ("django.contrib.auth.password_validation." "CommonPasswordValidator"),
     },
     {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+        "NAME": ("django.contrib.auth.password_validation." "NumericPasswordValidator"),
     },
 ]
 
 GRAPHENE = {
-    "SCHEMA": "learnhub.schema.schema"
+    "SCHEMA": "learnhub.schema.schema",
 }
 
 INTERNAL_IPS = [
@@ -227,23 +227,23 @@ STATIC_URL = "/static/"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-
     "filters": {
         "request_id": {
             "()": "library.middleware.RequestIDFilter",
         },
     },
-
     "formatters": {
         "simple": {
-            "format": "{levelname} {asctime} {name} request_id={request_id} {message}",
+            "format": (
+                "{levelname} {asctime} {name} " "request_id={request_id} {message}"
+            ),
             "style": "{",
         },
     },
-
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
@@ -251,31 +251,24 @@ LOGGING = {
             "filters": ["request_id"],
         },
     },
-
-
     "loggers": {
         "django": {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
         },
-
         "library": {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
         },
-
         "learnhub": {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
         },
     },
-
-
 }
-
 
 
 sentry_sdk.init(

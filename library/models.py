@@ -6,7 +6,7 @@ class Task(models.Model):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="tasks"
+        related_name="tasks",
     )
     title = models.CharField(max_length=200)
     completed = models.BooleanField(default=False)
@@ -32,11 +32,11 @@ class Comment(models.Model):
     post = models.ForeignKey(
         Post,
         on_delete=models.CASCADE,
-        related_name="comments"
+        related_name="comments",
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
     )
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -64,7 +64,6 @@ class Order(models.Model):
         PAID = "paid", "Paid"
         FAILED = "failed", "Failed"
         CANCELLED = "cancelled", "Cancelled"
-
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -95,6 +94,7 @@ class Order(models.Model):
     def __str__(self):
         return f"Order #{self.pk} - {self.user}"
 
+
 class StripeWebhookEvent(models.Model):
     event_id = models.CharField(
         max_length=255,
@@ -123,7 +123,7 @@ class Notification(models.Model):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["recipient", "is_read", "-created_at"]),
-    ]
+        ]
 
     def __str__(self):
         return f"Notification for {self.recipient}: {self.message}"
