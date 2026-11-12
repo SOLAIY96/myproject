@@ -1,8 +1,22 @@
+# Docker
+*.log
+
+# Python tooling
+.mypy_cache/
+.ruff_cache/
+
+# Django collected static files
+staticfiles/
+
+# Environment and secrets
+*.pem
+*.key
 
 # Environment variables
 .env
 .env.*
 !.env.example
+.env.prod
 
 frontend/.env
 frontend/.env.*
