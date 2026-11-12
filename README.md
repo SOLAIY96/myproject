@@ -1,546 +1,274 @@
-LearnHub — Django REST API Backend
-A feature-rich Django REST API backend built with Django REST Framework, PostgreSQL, Docker, Celery, RabbitMQ, and Redis.
+# LearnHub
 
-LearnHub is a backend engineering portfolio project focused on practical application development and production-oriented backend concepts, including authentication, task management, payment integration, file uploads, notifications, background processing, database optimization, and application health monitoring.
+[![Django CI](https://github.com/SOLAIY96/learnhub/actions/workflows/django.yml/badge.svg)](https://github.com/SOLAIY96/learnhub/actions/workflows/django.yml)
 
-Table of Contents
-Features
-Technology Stack
-Architecture
-Project Structure
-Getting Started
-Environment Variables
-Running with Docker
-Database Management
-API Documentation
-Authentication
-Background Processing
-Payment Integration
-File Uploads
-Health Monitoring
-Testing
-Logging
-Future Improvements
-Features
-1. Authentication and User Management
-User registration.
-JWT authentication using Django REST Framework Simple JWT.
-Access and refresh token endpoints.
-Authenticated API access.
-Password change functionality.
-User-specific resource access.
-2. Task Management
-Create, retrieve, update, and delete tasks.
-Associate tasks with authenticated users.
-Restrict task access to their respective owners.
-Validate task titles.
-Automatically create notifications when tasks are created.
-Trigger background notification processing through Celery.
-Log important task operations.
-3. Posts and Comments
-Retrieve posts.
-Search posts by title.
-Associate comments with posts and users.
-Retrieve related comments alongside posts.
-Optimize related-object retrieval using prefetch_related().
-4. File Uploads
-Authenticated file uploads.
-Associate uploaded files with their owners.
-Support PDF, JPEG, and PNG files.
-Validate file signatures.
-Enforce a maximum upload size of 5 MB.
-Handle multipart form submissions.
-5. Stripe Payment Integration
-Create Stripe Checkout sessions.
-Create and track payment orders.
-Process Stripe webhook events.
-Verify webhook signatures.
-Validate payment amounts and currencies.
-Handle duplicate webhook deliveries using event IDs.
-Update order statuses after successful payments.
-Provide authenticated payment status retrieval.
-Generate payment-success notifications.
-Payment configuration: The current implementation uses a fixed USD 10.00 test purchase and restricts checkout to Stripe test-mode secret keys.
+A Django REST API with JWT authentication, Stripe Checkout payments, file uploads, notifications, and health checks, plus a small React client to exercise it. It runs on PostgreSQL, Redis, Celery, and RabbitMQ with Docker Compose.
 
-6. Notification System
-Automatically create notifications for task creation.
-Generate payment-success notifications.
-Retrieve user-specific notifications.
-Mark notifications as read.
-Retrieve unread notification counts.
-Order notifications by creation date.
-7. Background Processing
-Celery worker integration.
-RabbitMQ message broker.
-Background task execution.
-Logging for background task enqueue failures.
-Redis integration for caching and health checks.
-8. Application Monitoring
-Application liveness endpoint.
-Application readiness endpoint.
-PostgreSQL connectivity checks.
-Redis connectivity checks.
-Application logging.
-Error logging for important operations.
-Technology Stack
+The focus is production-minded backend work: payment reliability, upload validation, ownership-based access control, observability, and CI.
 
-Category	Technology
-Programming Language	Python
-Backend Framework	Django
-API Framework	Django REST Framework
-Authentication	Simple JWT
-Database	PostgreSQL 17
-Background Processing	Celery
-Message Broker	RabbitMQ 3.13
-Cache	Redis 7
-Payment Integration	Stripe
-Containerization	Docker
-Container Orchestration	Docker Compose
-API Query Layer	Graphene-Django / GraphQL
-Architecture
-LearnHub follows a Django-based backend architecture with separate responsibilities for API handling, data persistence, background processing, and external payment integration.
+## Highlights
 
-High-Level Architecture
+- **Reliable Stripe webhooks.** Signature verification, a unique event ID per processed event, and a transaction that locks the order row (`select_for_update`) and rechecks for duplicates after taking the lock. The paid amount and currency are validated against the stored order, and only pending orders can move to paid.
+- **Tested under concurrency.** The test suite includes a rollback test (a failed event write leaves the order untouched) and a `TransactionTestCase` that delivers the same webhook from two threads at once.
+- **Safe file uploads.** PDF, JPEG, and PNG only, with extension checks, file-signature checks (a renamed file is rejected), and a 5 MB limit.
+- **Ownership-based access.** Tasks, attachments, notifications, and payment status are only visible to their owner.
+- **Observability.** Every response carries an `X-Request-ID`, which is also attached to log lines. Sentry is optional through `SENTRY_DSN`.
+- **Health endpoints.** Liveness and readiness checks (PostgreSQL and Redis), with `503` when a dependency is down.
+- **CI.** GitHub Actions runs against real PostgreSQL and Redis services: Django system check, migration drift check, tests, Black, isort, and Flake8.
 
-text
-                   API CLIENT
-                       |
-                       v
-                DJANGO REST API
-                       |
-          +------------+------------+
-          |            |            |
-          v            v            v
-       Accounts      Tasks       Payments
-          |            |            |
-          |            v            v
-          |       Notifications   Stripe
-          |            |
-          +------------+
-                       |
-                       v
-                  PostgreSQL
+## Tech Stack
 
+| Area | Technology |
+|---|---|
+| Backend | Python 3.12, Django, Django REST Framework |
+| App server | Gunicorn |
+| Auth | Simple JWT (15-minute access tokens, 7-day refresh tokens) |
+| Database | PostgreSQL 17 |
+| Background jobs | Celery with RabbitMQ 3.13 |
+| Cache and readiness checks | Redis 7 |
+| Payments | Stripe Checkout (test mode) |
+| Frontend | React 19, Vite |
+| Tooling | Docker Compose, GitHub Actions, Black, isort, Flake8 |
 
-             BACKGROUND PROCESSING
-                       |
-                       v
-                     Celery
-                       |
-                       v
-                    RabbitMQ
+## Architecture
 
+```text
+React client (Vite, :5173)
+        |
+        v
+Django REST API (:8000) ----> Stripe Checkout
+        |                          |
+        |                          v
+        |                  Stripe webhook --> /payments/webhook/
+        |
+        +--> PostgreSQL   (users, tasks, orders, notifications, webhook events)
+        +--> Redis        (cache, readiness check)
+        +--> RabbitMQ --> Celery worker
+```
 
-               INFRASTRUCTURE
-                       |
-                       v
-                     Redis
-Architecture Overview
-Django: Handles HTTP requests, API endpoints, authentication, and application logic.
-Django REST Framework: Provides serializers, API views, request validation, and permissions.
-PostgreSQL: Stores persistent application data.
-Celery: Handles asynchronous background tasks.
-RabbitMQ: Acts as the message broker for background task processing.
-Redis: Provides caching infrastructure and supports application readiness checks.
-Stripe: Handles test-mode payment checkout and webhook events.
-Docker Compose: Manages the application's containerized services.
-Project Structure
-The application uses Django models, serializers, views, services, and background tasks to organize backend functionality.
+## Project Structure
 
-Example structure:
-
-
-text
+```text
 learnhub/
-│
-├── learnhub/
-│   ├── settings.py
-│   ├── urls.py
-│   ├── asgi.py
-│   └── wsgi.py
-│
-├── library/
-│   ├── models.py
-│   ├── serializers.py
-│   ├── views.py
-│   ├── services.py
-│   ├── tasks.py
-│   └── tests.py
-│
-├── requirements/
-│
+├── .github/workflows/django.yml   # CI
+├── docs/cloud-architecture.md     # planned AWS layout
+├── frontend/                      # React + Vite client
+├── learnhub/                      # settings, urls, celery app, GraphQL schema
+├── library/                       # models, serializers, views, services, tasks, middleware
+│   └── tests/
 ├── Dockerfile
 ├── docker-compose.yml
 ├── .env.example
-├── .gitignore
-└── README.md
-The structure above illustrates the main project components. Adjust it to match the actual repository layout.
+└── requirements.txt
+```
 
-Getting Started
-Prerequisites
-Install the following:
+## Getting Started
 
-Git
-Docker
-Docker Compose V2
-Verify the installations:
+Requires Git, Docker with Compose V2, and Node.js (for the frontend).
 
+### 1. Backend
 
-bash
-docker --version
-docker compose version
-git --version
-Clone the Repository
-
-bash
-git clone (https://github.com/SOLAIY96/myproject.git)
-
-cd myproject
-Configure Environment Variables
-Create a local .env file:
-
-
-bash
+```bash
+git clone https://github.com/SOLAIY96/learnhub.git
+cd learnhub
 cp .env.example .env
-Configure the required variables according to your Django settings and Docker Compose configuration.
+```
 
-Environment Variables
-The application uses environment variables for Django configuration, database connectivity, frontend redirects, and Stripe integration.
+Edit `.env`. A working local setup looks like this (use your own Stripe test keys):
 
-Example .env.example:
-
-
-env
+```env
+SECRET_KEY=change-me-to-a-long-random-string
 DEBUG=True
-SECRET_KEY=replace-with-a-local-development-secret
+ALLOWED_HOSTS=localhost,127.0.0.1
+FRONTEND_URL=http://localhost:5173
 
-DATABASE_URL=postgresql://myprojectuser:myprojectpassword@db:5432/myprojectdb
+POSTGRES_DB=learnhub
+POSTGRES_USER=learnhub
+POSTGRES_PASSWORD=choose-a-local-password
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
 
-FRONTEND_URL=http://localhost:3000
+CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
 
-STRIPE_SECRET_KEY=sk_test_replace_me
-STRIPE_WEBHOOK_SECRET=whsec_replace_me
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
 
-Variable	Description
-DEBUG	Enables or disables Django debug mode
-SECRET_KEY	Django cryptographic signing key
-DATABASE_URL	PostgreSQL connection string
-FRONTEND_URL	Frontend URL used for Stripe redirects
-STRIPE_SECRET_KEY	Stripe test-mode secret key
-STRIPE_WEBHOOK_SECRET	Stripe webhook signing secret
-Additional Celery and Redis variables should be documented if they are required by the actual project configuration.
+Start everything and run migrations:
 
-Security considerations:
-
-Never commit real .env files.
-Never expose production credentials or API secrets.
-Use separate environment configurations for development and production.
-Use Docker Compose service names for internal container communication. For example, the database hostname is typically db, not localhost.
-Keep .env.example populated with placeholders rather than real secrets.
-Running with Docker
-Build and Start Services
-
-bash
-docker compose up --build
-To run services in detached mode:
-
-
-bash
+```bash
 docker compose up --build -d
-Apply Database Migrations
-
-bash
 docker compose exec web python manage.py migrate
-Check Running Containers
+docker compose exec web python manage.py createsuperuser   # optional
+```
 
-bash
-docker compose ps
-Access the Application
+| Service | Address |
+|---|---|
+| API | http://localhost:8000 |
+| Django admin | http://localhost:8000/admin/ |
+| GraphiQL | http://localhost:8000/graphql/ |
+| RabbitMQ management | http://localhost:15672 |
 
-Service	Address
-Django API	http://localhost:8000
-Django Admin	http://localhost:8000/admin/
-RabbitMQ Management	http://localhost:15672
-RabbitMQ management credentials depend on the Docker Compose configuration.
+### 2. Frontend
 
-View Logs
-View logs for all services:
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
+The client runs at http://localhost:5173. It supports login with automatic token refresh, tasks, notifications, attachment upload, and the Stripe checkout flow. The API address is currently set in `frontend/src/services/api.js`.
 
-bash
-docker compose logs -f
-View logs for individual services:
+### 3. Stripe webhooks (local)
 
+Forward Stripe events to your machine with the [Stripe CLI](https://docs.stripe.com/stripe-cli):
 
-bash
-docker compose logs -f web
-docker compose logs -f celery_worker
-docker compose logs -f db
-docker compose logs -f rabbitmq
-docker compose logs -f redis
-Stop Services
+```bash
+stripe listen --forward-to localhost:8000/payments/webhook/
+```
 
-bash
-docker compose down
-This stops and removes the containers and Compose network while preserving named volumes.
+Copy the `whsec_...` value it prints into `STRIPE_WEBHOOK_SECRET` in `.env`, then restart the `web` service.
 
-To remove containers and volumes:
+## Running with Gunicorn
 
+[Gunicorn](https://gunicorn.org/) is the production app server. Run it from the project root:
 
-bash
-docker compose down -v
-Warning: Removing volumes can permanently delete locally stored PostgreSQL data.
+```bash
+gunicorn learnhub.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 30
+```
 
-Database Management
-Run Django management commands inside the application container.
+Inside Docker Compose:
 
-Create Migrations
+```bash
+docker compose exec web gunicorn learnhub.wsgi:application --bind 0.0.0.0:8000 --workers 3
+```
 
-bash
-docker compose exec web python manage.py makemigrations
-Apply Migrations
+Notes:
 
-bash
-docker compose exec web python manage.py migrate
-Check Migration Status
+- Set `DEBUG=False` and list your real domain in `ALLOWED_HOSTS`.
+- A common starting point for `--workers` is `(2 x CPU cores) + 1`.
+- Gunicorn does not serve static files or user uploads. Production needs WhiteNoise, a reverse proxy such as Nginx, or object storage such as S3.
+- Put the app behind HTTPS (a reverse proxy or load balancer) before using real payments.
 
-bash
-docker compose exec web python manage.py showmigrations
-API Documentation
-The following endpoints are defined in the current URL configuration.
+## Environment Variables
 
-All paths below are relative to the application root.
+| Variable | Required | Description |
+|---|---|---|
+| `SECRET_KEY` | Yes | Django signing key |
+| `DEBUG` | No | Defaults to `False` |
+| `ALLOWED_HOSTS` | No | Comma-separated. Defaults to `localhost,127.0.0.1` |
+| `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT` | Yes | PostgreSQL connection. Use `db` as the host inside Docker Compose |
+| `CELERY_BROKER_URL` | Yes | RabbitMQ URL |
+| `REDIS_URL` | No | Defaults to `redis://redis:6379/1` |
+| `STRIPE_SECRET_KEY` | Yes (except in tests and CI) | Must start with `sk_test_`. Checkout refuses any other key |
+| `STRIPE_PUBLISHABLE_KEY` | No | Stripe publishable key |
+| `STRIPE_WEBHOOK_SECRET` | For payments | Without it the webhook returns `500` |
+| `FRONTEND_URL` | No | Used for Stripe redirects. Defaults to `http://localhost:5173` |
+| `SENTRY_DSN` | No | Enables Sentry error reporting |
 
-Authentication
+Never commit a real `.env` file.
 
-Method	Endpoint	Description	Access
-POST	/register/	Register a new user	Public
-POST	/token/	Obtain JWT tokens	Public
-POST	/token/refresh/	Refresh access token	Public
-POST	/change-password/	Change account password	Authenticated
-Tasks
+## API Reference
 
-Method	Endpoint	Description	Access
-GET	/tasks/	List user's tasks	Authenticated
-POST	/tasks/	Create a task	Authenticated
-GET	/tasks/{id}/	Retrieve a task	Owner
-PUT/PATCH	/tasks/{id}/	Update a task	Owner
-DELETE	/tasks/{id}/	Delete a task	Owner
-Posts
+Authenticate with `Authorization: Bearer <access_token>`. List endpoints are paginated (`?page=2`, 10 per page).
 
-Method	Endpoint	Description	Access
-GET	/posts/	Retrieve posts	Authenticated
-Search posts by title:
+### Authentication
 
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| POST | `/register/` | Create an account | Public |
+| POST | `/token/` | Obtain access and refresh tokens | Public |
+| POST | `/token/refresh/` | Refresh the access token | Public |
+| POST | `/change-password/` | Change password | Authenticated |
 
-http
-GET /posts/?search=django
-Attachments
+### Tasks
 
-Method	Endpoint	Description	Access
-GET	/attachments/	List user's attachments	Authenticated
-POST	/attachments/	Upload an attachment	Authenticated
-Supported formats: PDF, JPEG, PNG.
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| GET, POST | `/tasks/` | List own tasks, create a task | Authenticated |
+| GET, PUT, PATCH, DELETE | `/tasks/{id}/` | Retrieve, update, delete a task | Owner |
 
-Maximum file size: 5 MB.
+### Posts
 
-Payments
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| GET | `/posts/?search=django` | List posts with their comments, search by title | Authenticated |
 
-Method	Endpoint	Description	Access
-POST	/payments/checkout/	Create Stripe Checkout session	Authenticated
-GET	/payments/checkout/status/	Retrieve payment order status	Authenticated
-POST	/payments/webhook/	Process Stripe webhook	Stripe signature verification
-Notifications
+### Attachments
 
-Method	Endpoint	Description	Access
-GET	/notifications/	List notifications	Authenticated
-GET	/notifications/{id}/	Retrieve notification	Owner
-PATCH	/notifications/{id}/	Update notification read status	Owner
-GET	/notifications/unread-count/	Retrieve unread count	Authenticated
-Health Monitoring
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| GET, POST | `/attachments/` | List own files, upload a file (PDF, JPEG, PNG, up to 5 MB) | Authenticated |
 
-Method	Endpoint	Description
-GET	/health/live/	Application liveness
-GET	/health/ready/	Database and Redis readiness
-GraphQL
-The project also configures a GraphQL endpoint through Graphene-Django.
+### Payments
 
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| POST | `/payments/checkout/` | Create a pending order and a Stripe Checkout session | Authenticated |
+| GET | `/payments/checkout/status/?session_id=...` | Get the status of your order | Authenticated |
+| POST | `/payments/webhook/` | Receive Stripe events | Stripe signature |
 
-http
-GET /graphql/
-POST /graphql/
-GraphQL schema and available operations depend on the configured application schema.
+### Notifications
 
-Authentication
-The API uses JSON Web Tokens through Django REST Framework Simple JWT.
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| GET | `/notifications/` | List notifications, newest first | Authenticated |
+| GET, PATCH | `/notifications/{id}/` | Retrieve a notification, mark it as read | Owner |
+| GET | `/notifications/unread-count/` | Get the unread count | Authenticated |
 
-Obtain Tokens
+### Health
 
-http
-POST /token/
-Content-Type: application/json
-Example request:
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/health/live/` | The app is running |
+| GET | `/health/ready/` | PostgreSQL and Redis are reachable (`200`, or `503` with per-dependency results) |
 
+### GraphQL
 
-json
-{
-    "username": "your_username",
-    "password": "your_password"
-}
-Use the returned access token in authenticated requests:
+`/graphql/` exposes a `tasks` query and a `createTask` mutation through Graphene-Django.
 
+## How Payments Work
 
-http
-Authorization: Bearer YOUR_ACCESS_TOKEN
-Refresh Token
+1. An authenticated user calls `POST /payments/checkout/`.
+2. The API creates a pending order and a Stripe Checkout session, then stores the session ID on the order.
+3. The user pays on Stripe's hosted page and is redirected back to `FRONTEND_URL`.
+4. Stripe sends `checkout.session.completed` or `checkout.session.async_payment_succeeded` to `/payments/webhook/`.
+5. The API verifies the signature and ignores event types it does not handle.
+6. Inside a transaction it checks the event ID, locks the order, checks it again, and validates the payment status, currency, and amount against the stored order.
+7. A pending order becomes paid, a notification is created, and the event ID is recorded. Duplicate deliveries return `200` without changing anything.
 
-http
-POST /token/refresh/
-Content-Type: application/json
-Example request:
+The checkout is currently a fixed USD 10.00 test purchase, and only `sk_test_` keys are accepted.
 
+## Testing and CI
 
-json
-{
-    "refresh": "YOUR_REFRESH_TOKEN"
-}
-Background Processing
-Celery is integrated for asynchronous task processing.
-
-RabbitMQ acts as the message broker, allowing the application to enqueue background tasks for execution by a Celery worker.
-
-For example, creating a task triggers a notification-related Celery task.
-
-The application also records errors when background task enqueueing fails.
-
-Payment Integration
-LearnHub integrates Stripe Checkout for test-mode payment processing.
-
-Payment Workflow
-An authenticated user requests a checkout session.
-The application creates a pending order.
-A Stripe Checkout session is created.
-The user completes payment through Stripe Checkout.
-Stripe sends a webhook event.
-The application verifies the webhook signature.
-Payment amount and currency are checked against the stored order.
-The order status is updated.
-A payment-success notification is created.
-The webhook event is recorded to prevent duplicate processing.
-Payment Reliability
-The webhook implementation includes:
-
-Stripe signature verification.
-Event ID tracking.
-Database transactions.
-Order row locking.
-Payment amount validation.
-Currency validation.
-Duplicate event handling.
-The current checkout implementation supports a fixed USD 10.00 test purchase.
-
-File Uploads
-Authenticated users can upload files through the attachments endpoint.
-
-Supported Formats
-PDF
-JPEG
-PNG
-Validation
-Maximum file size of 5 MB.
-File extension validation.
-File signature validation.
-Ownership association.
-Uploads are handled using Django REST Framework's multipart request parsers.
-
-Health Monitoring
-The application provides two health endpoints.
-
-Liveness Check
-
-http
-GET /health/live/
-Returns a response indicating that the Django application is running.
-
-Example:
-
-
-json
-{
-    "status": "alive"
-}
-Readiness Check
-
-http
-GET /health/ready/
-Checks:
-
-PostgreSQL connectivity.
-Redis connectivity.
-Example successful response:
-
-
-json
-{
-    "status": "ready",
-    "checks": {
-        "database": true,
-        "redis": true
-    }
-}
-Returns HTTP 200 when both dependency checks succeed and HTTP 503 when a check fails.
-
-Testing
-Run Django tests inside the application container:
-
-
-bash
+```bash
 docker compose exec web python manage.py test
-Run tests with additional verbosity:
+```
 
+The tests cover Stripe webhooks (valid, duplicate, concurrent, invalid signature, amount and currency mismatch, unpaid, unknown, failed, and cancelled orders), attachment upload validation and ownership, and notifications.
 
-bash
-docker compose exec web python manage.py test --verbosity 2
-Logging
-The application uses Python's logging framework to record important application events.
+CI (`.github/workflows/django.yml`) runs on every push and pull request. Code style is enforced with Black, isort, and Flake8:
 
-Examples include:
+```bash
+black --check . && isort --check-only . && flake8 .
+```
 
-Task creation and updates.
-Task deletion.
-Password change failures.
-Background task enqueue failures.
-Stripe webhook verification.
-Payment processing errors.
-Application health check failures.
-Future Improvements
-Potential improvements for the project include:
+## Known Limitations
 
-Expand automated unit and integration test coverage.
-Add comprehensive API documentation using OpenAPI and Swagger.
-Improve service-layer separation for complex business logic.
-Add more robust background task retry and failure handling.
-Introduce structured logging and monitoring.
-Add continuous integration and deployment using GitHub Actions.
-Improve production deployment configuration.
-Add database performance monitoring.
-Expand payment functionality beyond the current test checkout flow.
-Improve application security and deployment hardening.
-Project Goals
-LearnHub demonstrates practical backend engineering concepts through the development of a Django application.
+- The Celery notification task enqueued when a task is created is a placeholder that only logs a message.
+- The GraphQL endpoint uses Django session authentication, not JWT.
+- Default API throttling is strict (3 requests per minute for anonymous users, 5 for authenticated users). See `REST_FRAMEWORK` in `learnhub/settings.py`.
+- Uploaded files are only served by Django when `DEBUG=True`, and Gunicorn does not serve static files or uploads. A production deployment needs WhiteNoise or a reverse proxy for static files, plus file storage for uploads. `docs/cloud-architecture.md` describes the planned AWS layout.
 
-Key areas of focus:
+## Roadmap
 
-REST API development.
-Authentication and authorization.
-Relational database design.
-Background task processing.
-Payment integration.
-File validation and uploads.
-Database transactions.
-Query optimization.
-Docker-based development.
-Application health monitoring.
-Backend architecture and code organization.
+- [ ] OpenAPI / Swagger documentation
+- [ ] Real background jobs (for example, expiring stale pending orders) with retries
+- [ ] Handle `async_payment_failed` and `checkout.session.expired` events
+- [ ] Production deployment configuration and a live demo
+- [ ] API tests for tasks, authentication, and the checkout view
 
-Built with Python, Django, and a focus on backend engineering.
+## Author
+
+Built by [SOLAIY96](https://github.com/SOLAIY96).
