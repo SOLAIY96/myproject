@@ -8,7 +8,7 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-
+import os
 import sys
 from datetime import timedelta
 from pathlib import Path
@@ -285,11 +285,11 @@ CORS_ALLOWED_ORIGINS = [
 
 # Production security settings
 
-SECURE_SSL_REDIRECT = True
+CI = os.environ.get("CI") == "True"
 
-SESSION_COOKIE_SECURE = True
-
-CSRF_COOKIE_SECURE = True
+SECURE_SSL_REDIRECT = not CI and not DEBUG is False
+SESSION_COOKIE_SECURE = not CI and not DEBUG is False
+CSRF_COOKIE_SECURE = not CI and not DEBUG is False
 
 SECURE_HSTS_SECONDS = 31536000
 
