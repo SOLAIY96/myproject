@@ -288,9 +288,9 @@ CORS_ALLOWED_ORIGINS = [
 
 CI = os.environ.get("CI") == "True"
 
-SECURE_SSL_REDIRECT = not CI and not DEBUG is False
-SESSION_COOKIE_SECURE = not CI and not DEBUG is False
-CSRF_COOKIE_SECURE = not CI and not DEBUG is False
+SECURE_SSL_REDIRECT = not CI and not DEBUG
+SESSION_COOKIE_SECURE = not CI and not DEBUG
+CSRF_COOKIE_SECURE = not CI and not DEBUG
 
 SECURE_HSTS_SECONDS = 31536000
 
