@@ -71,7 +71,7 @@ Requires Git, Docker with Compose V2, and Node.js (for the frontend).
 ### 1. Backend
 
 ```bash
-git clone https://github.com/SOLAIY96/learnhub.git
+git clone https://github.com/SOLAIY96/myproject.git
 cd myproject
 cp .env.example .env
 ```
