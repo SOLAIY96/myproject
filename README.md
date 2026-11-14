@@ -72,7 +72,7 @@ Requires Git, Docker with Compose V2, and Node.js (for the frontend).
 
 ```bash
 git clone https://github.com/SOLAIY96/learnhub.git
-cd learnhub
+cd myproject
 cp .env.example .env
 ```
 
